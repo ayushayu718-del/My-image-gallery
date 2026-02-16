@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Dynamic Chat To-Do</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+ --g1:#667eea;
+ --g2:#764ba2;
+ --card:#ffffffcc;
+ --bubble:#eef2ff;
+ --text:#111;
+}
+
+body{
+ margin:0;
+ font-family:Segoe UI, Arial;
+ height:100vh;
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ background:linear-gradient(135deg,var(--g1),var(--g2));
+ transition:.5s;
+ color:var(--text);
+}
+
+.app{
+ width:380px;
+ height:640px;
+ backdrop-filter: blur(14px);
+ background:var(--card);
+ border-radius:20px;
+ box-shadow:0 20px 50px rgba(0,0,0,.25);
+ display:flex;
+ flex-direction:column;
+ overflow:hidden;
+ transition:.4s;
+}
+
+.header{
+ padding:14px;
+ font-weight:700;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ border-bottom:1px solid #ffffff55;
+}
+
+.themeBtn{
+ cursor:pointer;
+ padding:6px 10px;
+ border-radius:8px;
+ border:none;
+ font-weight:600;
+}
+
+.chat{
+ flex:1;
+ overflow:auto;
+ padding:14px;
+}
+
+.bubble{
+ background:var(--bubble);
+ padding:12px;
+ border-radius:16px;
+ margin-bottom:10px;
+ animation:pop .25s ease;
+ transition:.3s;
+}
+
+.done{
+ text-decoration:line-through;
+ opacity:.6;
+}
+
+.meta{
+ font-size:12px;
+ display:flex;
+ justify-content:space-between;
+ margin-top:6px;
+ opacity:.7;
+}
+
+.actions button{
+ border:none;
+ background:none;
+ cursor:pointer;
+ font-size:14px;
+ margin-left:6px;
+}
+
+.controls{
+ display:flex;
+ gap:8px;
+ padding:10px;
+ border-top:1px solid #ffffff55;
+}
+
+input{
+ flex:1;
+ padding:10px;
+ border-radius:10px;
+ border:none;
+ outline:none;
+}
+
+.add{
+ background:#111;
+ color:white;
+ border:none;
+ padding:10px 14px;
+ border-radius:10px;
+ cursor:pointer;
+}
+
+.search{
+ width:100%;
+ padding:8px;
+ border:none;
+ outline:none;
+ border-radius:8px;
+ margin:8px 0;
+}
+
+@keyframes pop{
+ from{opacity:0; transform:translateY(8px)}
+ to{opacity:1; transform:translateY(0)}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="header">
+ Dynamic To-Do
+ <button class="themeBtn" onclick="nextTheme()">Change Theme</button>
+</div>
+
+<div style="padding:10px">
+ <input class="search" placeholder="Search..." oninput="render()">
+</div>
+
+<div class="chat" id="chat"></div>
+
+<div class="controls">
+ <input id="text" placeholder="Enter task">
+ <button class="add" onclick="add()">Add</button>
+</div>
+
+</div>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem("dynTasks")||"[]");
+
+const themes = [
+ {g1:"#667eea", g2:"#764ba2", bubble:"#eef2ff", card:"#ffffffcc", text:"#111"},
+ {g1:"#0ea5e9", g2:"#22c55e", bubble:"#ecfeff", card:"#ffffffcc", text:"#111"},
+ {g1:"#f97316", g2:"#ef4444", bubble:"#fff7ed", card:"#ffffffcc", text:"#111"},
+ {g1:"#111827", g2:"#1f2937", bubble:"#374151", card:"#111827cc", text:"#e5e7eb"},
+ {g1:"#ec4899", g2:"#8b5cf6", bubble:"#fdf4ff", card:"#ffffffcc", text:"#111"}
+];
+
+let themeIndex = 0;
+
+function applyTheme(t){
+ document.documentElement.style.setProperty("--g1",t.g1);
+ document.documentElement.style.setProperty("--g2",t.g2);
+ document.documentElement.style.setProperty("--bubble",t.bubble);
+ document.documentElement.style.setProperty("--card",t.card);
+ document.documentElement.style.setProperty("--text",t.text);
+}
+
+function nextTheme(){
+ themeIndex = (themeIndex+1)%themes.length;
+ applyTheme(themes[themeIndex]);
+}
+
+function save(){
+ localStorage.setItem("dynTasks",JSON.stringify(tasks));
+}
+
+function add(){
+ let v = text.value.trim();
+ if(!v) return;
+ tasks.push({
+  id:Date.now(),
+  text:v,
+  done:false,
+  time:new Date().toLocaleTimeString()
+ });
+ text.value="";
+ save(); render();
+}
+
+function toggle(id){
+ tasks = tasks.map(t=>t.id===id?{...t,done:!t.done}:t);
+ save(); render();
+}
+
+function delTask(id){
+ tasks = tasks.filter(t=>t.id!==id);
+ save(); render();
+}
+
+function edit(id){
+ let n = prompt("Edit task");
+ if(!n) return;
+ tasks = tasks.map(t=>t.id===id?{...t,text:n}:t);
+ save(); render();
+}
+
+function render(){
+ let q = document.querySelector(".search").value.toLowerCase();
+ chat.innerHTML="";
+
+ tasks.filter(t=>t.text.toLowerCase().includes(q))
+ .forEach(t=>{
+ chat.innerHTML += `
+ <div class="bubble">
+   <div class="${t.done?'done':''}">${t.text}</div>
+   <div class="meta">
+     ${t.time}
+     <span class="actions">
+       <button onclick="toggle(${t.id})">✔</button>
+       <button onclick="edit(${t.id})">✎</button>
+       <button onclick="delTask(${t.id})">🗑</button>
+     </span>
+   </div>
+ </div>`;
+ });
+
+ chat.scrollTop = chat.scrollHeight;
+}
+
+text.addEventListener("keypress",e=>{
+ if(e.key==="Enter") add();
+});
+
+applyTheme(themes[0]);
+render();
+</script>
+
+</body>
+</html>
